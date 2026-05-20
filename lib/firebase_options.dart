@@ -16,17 +16,28 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // Web: must use const String.fromEnvironment (compile-time only)
-  static FirebaseOptions get web => FirebaseOptions(
-        apiKey: const String.fromEnvironment('FIREBASE_WEB_API_KEY'),
-        appId: const String.fromEnvironment('FIREBASE_WEB_APP_ID'),
-        messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
-        projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID'),
-        authDomain: const String.fromEnvironment('FIREBASE_WEB_AUTH_DOMAIN'),
-        databaseURL: const String.fromEnvironment('FIREBASE_DATABASE_URL'),
-        storageBucket: const String.fromEnvironment('FIREBASE_STORAGE_BUCKET'),
-        measurementId: const String.fromEnvironment('FIREBASE_WEB_MEASUREMENT_ID'),
-      );
+  // Web: const String.fromEnvironment at compile time, fallback to FirebaseConfig
+  static FirebaseOptions get web {
+    const apiKey = String.fromEnvironment('FIREBASE_WEB_API_KEY');
+    const appId = String.fromEnvironment('FIREBASE_WEB_APP_ID');
+    const senderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID');
+    const projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
+    const authDomain = String.fromEnvironment('FIREBASE_WEB_AUTH_DOMAIN');
+    const dbUrl = String.fromEnvironment('FIREBASE_DATABASE_URL');
+    const bucket = String.fromEnvironment('FIREBASE_STORAGE_BUCKET');
+    const measurementId = String.fromEnvironment('FIREBASE_WEB_MEASUREMENT_ID');
+
+    return FirebaseOptions(
+      apiKey: apiKey.isNotEmpty ? apiKey : FirebaseConfig.webApiKey,
+      appId: appId.isNotEmpty ? appId : FirebaseConfig.webAppId,
+      messagingSenderId: senderId.isNotEmpty ? senderId : FirebaseConfig.messagingSenderId,
+      projectId: projectId.isNotEmpty ? projectId : FirebaseConfig.projectId,
+      authDomain: authDomain.isNotEmpty ? authDomain : FirebaseConfig.webAuthDomain,
+      databaseURL: dbUrl.isNotEmpty ? dbUrl : FirebaseConfig.databaseUrl,
+      storageBucket: bucket.isNotEmpty ? bucket : FirebaseConfig.storageBucket,
+      measurementId: measurementId.isNotEmpty ? measurementId : FirebaseConfig.webMeasurementId,
+    );
+  }
 
   // Non-web: try --dart-define at runtime, fall back to FirebaseConfig
   static FirebaseOptions get android => FirebaseOptions(
