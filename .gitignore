@@ -15,6 +15,21 @@ migrate_working_dir/
 # Embedded git repos
 chat--qq/
 
+# Firebase config (sensitive)
+android/app/google-services.json
+lib/firebase_options.dart
+
+# Design assets & personal notes
+TGUI/
+ADVANCED_GROUP_FEATURES.md
+UI_UX_DESIGN.md
+deploy_web.md
+gemini.md
+*.html
+public/
+firebase_quota.html
+ui.html
+
 # Firebase functions
 functions/node_modules/
 
