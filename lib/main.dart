@@ -28,7 +28,7 @@ void main() async {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await NotificationService.init();
   } catch (e) {
-    runApp(const _ConfigErrorApp());
+    runApp(_ConfigErrorApp('$e'));
     return;
   }
 
@@ -559,7 +559,8 @@ class _AppPasswordScreenState extends State<_AppPasswordScreen> {
 }
 
 class _ConfigErrorApp extends StatelessWidget {
-  const _ConfigErrorApp();
+  final String error;
+  const _ConfigErrorApp(this.error);
 
   @override
   Widget build(BuildContext context) {
@@ -568,28 +569,43 @@ class _ConfigErrorApp extends StatelessWidget {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
-                const SizedBox(height: 16),
-                const Text(
-                  'Firebase not configured',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Pass Firebase keys via --dart-define flags:\n'
-                  'flutter run --dart-define=FIREBASE_PROJECT_ID=... --dart-define=FIREBASE_WEB_API_KEY=...',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'See README.md for full setup instructions.',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Firebase not configured',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Pass Firebase keys via --dart-define flags:\n'
+                    'flutter run --dart-define=FIREBASE_PROJECT_ID=... --dart-define=FIREBASE_WEB_API_KEY=...',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      error,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.red.shade800),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'See README.md for full setup instructions.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
