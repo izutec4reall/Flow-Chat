@@ -20,7 +20,7 @@ build.sh
 
 # Firebase config (sensitive)
 android/app/google-services.json
-lib/firebase_options.dart
+
 
 # Design assets & personal notes
 TGUI/
