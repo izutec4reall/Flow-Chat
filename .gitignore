@@ -21,7 +21,6 @@ build.sh
 # Firebase config (sensitive)
 android/app/google-services.json
 firebase_config.json
-run.sh
 
 
 # Design assets & personal notes
