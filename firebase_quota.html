@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firebase Spark Plan — Quota & Usage</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: auto; padding: 2rem; background: #111; color: #eee; }
+  h1, h2 { color: #ffca28; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #333; padding: .6rem; text-align: center; }
+  th { background: #222; }
+  .ok { color: #4caf50; font-weight: bold; }
+  .warn { color: #ff9800; font-weight: bold; }
+  .critical { color: #f44336; font-weight: bold; }
+  .note { background: #1e3a5f; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+  .bar { height: 20px; border-radius: 10px; margin: 4px 0; }
+  .bar-fill { height: 100%; border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<h1>🔥 Firebase Spark Plan — السعة و الاستخدام المتوقع</h1>
+<p>تقدير لاستهلاك تطبيق Flow بناءً على ٥٠ مستخدم نشط يومياً و ٢٬٥٠٠ رسالة/يوم.</p>
+
+<h2>١. حدود الباقة المجانية (Spark)</h2>
+<table>
+  <tr><th>الخدمة</th><th>الحد</th><th>نوع الحد</th></tr>
+  <tr><td>Firestore — قراءة</td><td>٥٠٬٠٠٠</td><td>/يوم</td></tr>
+  <tr><td>Firestore — كتابة</td><td>٢٠٬٠٠٠</td><td>/يوم</td></tr>
+  <tr><td>Firestore — مسح</td><td>٢٠٬٠٠٠</td><td>/يوم</td></tr>
+  <tr><td>Firestore — تخزين</td><td>١ GiB</td><td>إجمالي</td></tr>
+  <tr><td>Firestore — تحميل (Egress)</td><td>١٠ GiB</td><td>/شهر</td></tr>
+  <tr><td>Authentication (Email/Google)</td><td>غير محدود</td><td>—</td></tr>
+  <tr><td>Authentication (Phone)</td><td>١٠٬٠٠٠</td><td>/شهر</td></tr>
+  <tr><td>Hosting — تخزين</td><td>١٠ GB</td><td>إجمالي</td></tr>
+  <tr><td>Hosting — نقل بيانات</td><td>٣٦٠ MB</td><td>/يوم</td></tr>
+  <tr><td>Cloud Functions</td><td>غير متاح</td><td>يحتاج Blaze</td></tr>
+</table>
+
+<h2>٢. تقدير الاستهلاك اليومي (٥٠ مستخدم)</h2>
+
+<table>
+  <tr><th>العملية</th><th>العدد التقريبي/يوم</th><th>% من الحد</th><th>الحالة</th></tr>
+  <tr>
+    <td>إرسال رسالة (write message + update chat)</td>
+    <td>٢ × ٢٬٥٠٠ = ٥٬٠٠٠ write</td>
+    <td>٢٥٪</td>
+    <td class="ok">آمن</td>
+  </tr>
+  <tr>
+    <td>تحديث بروفايل / قراءة الإعدادات</td>
+    <td>~٥٠٠ write</td>
+    <td>٢٫٥٪</td>
+    <td class="ok">آمن</td>
+  </tr>
+  <tr>
+    <td><strong>إجمالي الكتابة</strong></td>
+    <td><strong>~٥٬٥٠٠</strong></td>
+    <td><strong>٢٧٫٥٪</strong></td>
+    <td class="ok">آمن</td>
+  </tr>
+  <tr><td colspan="4" style="background:#222;height:4px;"></td></tr>
+  <tr>
+    <td>فتح الشات (قراءة ٢٠ رسالة)</td>
+    <td>٢٠ × ٢٥٠ = ٥٬٠٠٠ read</td>
+    <td>١٠٪</td>
+    <td class="ok">آمن</td>
+  </tr>
+  <tr>
+    <td>عرض قائمة الشاتات</td>
+    <td>~٢٥٠ read</td>
+    <td>٠٫٥٪</td>
+    <td class="ok">آمن</td>
+  </tr>
+  <tr>
+    <td>عرض بروفايلات / public keys</td>
+    <td>~٥٠٠ read</td>
+    <td>١٪</td>
+    <td class="ok">آمن</td>
+  </tr>
+  <tr>
+    <td>قراءة Config + User data</td>
+    <td>~٣٠٠ read</td>
+    <td>٠٫٦٪</td>
+    <td class="ok">آمن</td>
+  </tr>
+  <tr>
+    <td><strong>إجمالي القراءة</strong></td>
+    <td><strong>~٦٬٠٥٠</strong></td>
+    <td><strong>١٢٫١٪</strong></td>
+    <td class="ok">آمن</td>
+  </tr>
+</table>
+
+<h2>٣. متى تنتهي الحصة؟</h2>
+
+<div class="note">
+  <strong>📅 الحدود اليومية بتتجدد كل يوم في منتصف الليل (Pacific Time).</strong><br>
+  يعني لو استهلكت الـ ٥٠٬٠٠٠ قراءة قبل نهاية اليوم، الباقي من اليوم مش هتقدر تقرأ — بس اليوم اللي بعده بيرجع طبيعي.
+</div>
+
+<h3>القراءة (Reads)</h3>
+<div class="bar" style="background:#333;"><div class="bar-fill" style="width:12%;background:#4caf50;"></div></div>
+<p>تستهلك ~١٢٪ من الحد. تقدر توصل لـ ~٤١٦ مستخدم نشط يومياً قبل ما تكسر الحد.</p>
+
+<h3>الكتابة (Writes)</h3>
+<div class="bar" style="background:#333;"><div class="bar-fill" style="width:27%;background:#ff9800;"></div></div>
+<p>تستهلك ~٢٧٪ من الحد. تقدر توصل لـ ~١٨١ مستخدم نشط أو ~٩٬٠٠٠ رسالة/يوم.</p>
+
+<h3>سيناريوهات التوسع</h3>
+<table>
+  <tr><th>المستخدمين النشطين</th><th>الرسائل/يوم</th><th>Reads</th><th>Writes</th><th>الحالة</th></tr>
+  <tr><td>٥٠</td><td>٢٬٥٠٠</td><td>٦٬٠٥٠ (١٢٪)</td><td>٥٬٥٠٠ (٢٧٪)</td><td class="ok">آمن</td></tr>
+  <tr><td>١٠٠</td><td>٥٬٠٠٠</td><td>١٢٬١٠٠ (٢٤٪)</td><td>١١٬٠٠٠ (٥٥٪)</td><td class="ok">آمن</td></tr>
+  <tr><td>٢٠٠</td><td>١٠٬٠٠٠</td><td>٢٤٬٢٠٠ (٤٨٪)</td><td>٢٢٬٠٠٠ (١١٠٪)</td><td class="warn">الكتابة بتكسر الحد 🔴</td></tr>
+  <tr><td>٤٠٠</td><td>٢٠٬٠٠٠</td><td>٤٨٬٤٠٠ (٩٦٪)</td><td>٤٤٬٠٠٠ (٢٢٠٪)</td><td class="critical">الاتنين فشل 🔴🔴</td></tr>
+</table>
+
+<h2>٤. التخزين (Firestore)</h2>
+<p>
+  كل رسالة ~١ KB. ١٠٠ مستخدم × ٥٠ رسالة/يوم × ٣٠ يوم = ~١٥٠٬٠٠٠ رسالة/شهر = ~١٥٠ MB.<br>
+  <strong>١ GiB = ١٬٠٢٤ MB</strong>. يكفي لحوالي <strong>~٧ أشهر</strong> من الاستخدام العادي قبل ما نوصل ١ GiB.
+</p>
+
+<h2>٥. توزيع الاستهلاك خلال اليوم</h2>
+<div class="note">
+  <strong>🕐 لو الاستخدام موزع على ١٦ ساعة:</strong><br>
+  ~٣٧٨ read/ساعة (١٠ reads كل دقيقة)<br>
+  ~٣٤٤ write/ساعة (٦ writes كل دقيقة)<br>
+  <strong>مش هتوصل للحد اليومي إلا مع ٤ أضعاف الاستخدام الحالي.</strong>
+</div>
+
+<h2>٦. خلاصة</h2>
+<ul>
+  <li>✅ التطبيق شغال مرتاح على Spark لحد <strong>~١٨٠ مستخدم نشط يومياً</strong>.</li>
+  <li>✅ الحدود بتتجدد يومياً — مش هتوقف للأبد.</li>
+  <li>⚠️ أول حاجة هتخلص هي <strong>الكتابة (Writes)</strong> عند ~١٨٠+ مستخدم.</li>
+  <li>📦 التخزين (١ GiB) هيكفي ~٧ شهور من الاستخدام العادي.</li>
+  <li>🚀 لو احتجت Blaze (Cloud Functions أو حدود أعلى)، الترقية بـ Pay-as-you-go و أول ٢٠٠$ كريديت مجاني.</li>
+</ul>
+
+</body>
+</html>

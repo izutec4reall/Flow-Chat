@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "flow-chat-5e38b"
+  },
+  "targets": {
+    "flow-chat-5e38b": {
+      "hosting": {
+        "main-app": [
+          "flowgo"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

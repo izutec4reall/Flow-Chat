@@ -1,0 +1,42 @@
+{
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs18"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "flow-chat-5e38b",
+          "appId": "1:156617951416:android:daaf63f01e1d695f730c4d",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "flow-chat-5e38b",
+          "configurations": {
+            "android": "1:156617951416:android:daaf63f01e1d695f730c4d",
+            "ios": "1:156617951416:ios:fc80bc7237809e67730c4d",
+            "web": "1:156617951416:web:5e8e6901299a7e19730c4d"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "target": "main-app",
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
