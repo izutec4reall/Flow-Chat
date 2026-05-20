@@ -23,10 +23,14 @@ import 'screens/chat/chat_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // FCM push notifications
-  await NotificationService.init();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await NotificationService.init();
+  } catch (e) {
+    runApp(const _ConfigErrorApp());
+    return;
+  }
 
   // Enable Firestore offline persistence
   FirebaseFirestore.instance.settings = const Settings(
@@ -547,6 +551,46 @@ class _AppPasswordScreenState extends State<_AppPasswordScreen> {
                 child: Text(context.t('verify')),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConfigErrorApp extends StatelessWidget {
+  const _ConfigErrorApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.orange),
+                const SizedBox(height: 16),
+                const Text(
+                  'Firebase not configured',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Pass Firebase keys via --dart-define flags:\n'
+                  'flutter run --dart-define=FIREBASE_PROJECT_ID=... --dart-define=FIREBASE_WEB_API_KEY=...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'See README.md for full setup instructions.',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
         ),
       ),

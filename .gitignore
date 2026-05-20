@@ -15,6 +15,9 @@ migrate_working_dir/
 # Embedded git repos
 chat--qq/
 
+# Local build script (contains your dart-define keys)
+build.sh
+
 # Firebase config (sensitive)
 android/app/google-services.json
 lib/firebase_options.dart

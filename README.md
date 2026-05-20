@@ -400,6 +400,7 @@ SplashScreen
 - Flutter SDK (أحدث إصدار)
 - Android Studio / VS Code
 - جهاز Android أو iOS أو محاكي
+- مشروع Firebase + حساب Cloudinary
 
 ### الخطوات
 
@@ -415,23 +416,55 @@ flutter pub get
 #    - أنشئ مشروع Firebase
 #    - فعّل Authentication (Email/Password)
 #    - فعّل Cloud Firestore + Realtime Database
-#    - أضف تطبيق Android/iOS
-#    - حمل ملف google-services.json / GoogleService-Info.plist
-#    - ثبت في المجلد المناسب
-
-# 4. إعداد Cloudinary
-#    - أنشئ حساب Cloudinary
-#    - أنشئ Upload Preset باسم "flow-preset"
-#    - حدث الرابط في cloudinary_service.dart
-
-# 5. تشغيل التطبيق
-flutter run
+#    - أضف تطبيق Android/iOS/Web
+#    - حمل ملف google-services.json وضعه في android/app/
+#    - سجل القيم من firebase_options.dart (أو استخدم flutterfire configure)
 ```
 
+#### تشغيل محلي (بناءً على --dart-define)
+
+جميع مفاتيح Firebase تُمرر عبر `--dart-define` أثناء البناء:
+
+```bash
+flutter run --dart-define=FIREBASE_PROJECT_ID=your_project \
+  --dart-define=FIREBASE_MESSAGING_SENDER_ID=123456 \
+  --dart-define=FIREBASE_DATABASE_URL=https://your_project.firebasedatabase.app \
+  --dart-define=FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app \
+  --dart-define=FIREBASE_WEB_API_KEY=... \
+  --dart-define=FIREBASE_WEB_APP_ID=... \
+  --dart-define=FIREBASE_WEB_AUTH_DOMAIN=... \
+  --dart-define=FIREBASE_WEB_MEASUREMENT_ID=... \
+  --dart-define=FIREBASE_ANDROID_API_KEY=... \
+  --dart-define=FIREBASE_ANDROID_APP_ID=... \
+  --dart-define=FIREBASE_IOS_API_KEY=... \
+  --dart-define=FIREBASE_IOS_APP_ID=... \
+  --dart-define=FIREBASE_IOS_CLIENT_ID=... \
+  --dart-define=FIREBASE_WINDOWS_API_KEY=... \
+  --dart-define=FIREBASE_WINDOWS_APP_ID=... \
+  --dart-define=FIREBASE_WINDOWS_AUTH_DOMAIN=... \
+  --dart-define=FIREBASE_WINDOWS_MEASUREMENT_ID=...
+```
+
+> 💡 **نصيحة:** أنشئ ملف `build.sh` يحتوي على الأمر كاملاً مع مفاتيحك عشان ما تعيد كتابتها كل مرة، وأضف الملف لـ `.gitignore`.
+
+#### GitHub Actions + Secrets
+
+عشان تبني APK تلقائياً من GitHub:
+
+1. اذهب إلى `Settings → Secrets and variables → Actions` في الـ repo.
+2. أضف كل مفتاح Firebase كـ **Repository secret** بنفس الاسم المذكور فوق.
+3. أضف الـ secret `GOOGLE_SERVICES_JSON` — محتوى ملف `google-services.json` كاملاً.
+4. ادفع التعديلات → GitHub Actions يبني APK تلقائياً.
+
+### 4. إعداد Cloudinary
+- أنشئ حساب Cloudinary
+- أنشئ Upload Preset باسم "flow-preset" من نوع **Unsigned**
+- حدث الرابط في `cloudinary_service.dart`
+
 ### ملاحظات مهمة
-- مشروع Firebase يجب أن يكون على **Blaze Plan** أو أعلى إذا أردت استخدام Realtime Database خارج us-central1
-- Cloudinary يجب أن يكون **Upload Preset** من نوع **Unsigned**
-- التأكد من تفعيل **Firestore Indexes** للاستعلامات المعقدة
+- المشروع لا يحتوي على مفاتيح Firebase حقيقية في الـ repository — كلها تمر عبر `--dart-define`
+- `lib/firebase_options.dart` يقرأ من `--dart-define` ولا يحتوي أي قيم ثابتة
+- ملف `android/app/google-services.json` مضاف لـ `.gitignore` — لازم توفره يدوياً أو عبر CI Secret
 
 ---
 
