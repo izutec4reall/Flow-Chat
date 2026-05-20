@@ -82,14 +82,10 @@ jobs:
             - [APK arm64-v8a](app-arm64-v8a-release.apk) — for most modern Android phones
             - [APK armeabi-v7a](app-armeabi-v7a-release.apk) — for older Android devices
             - [APK x86_64](app-x86_64-release.apk) — for emulators / Chromebooks
-            - [Web App](https://flowgo.web.app) — browser version
           files: |
             build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
             build/app/outputs/flutter-apk/app-x86_64-release.apk
           fail_on_unmatched_files: true
 
-      - name: Deploy Web to Firebase Hosting
-        if: github.ref == 'refs/heads/main'
-        run: |
-          npx -y firebase-tools@latest deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
+
