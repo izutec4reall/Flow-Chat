@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../utils/translations.dart';
@@ -41,16 +42,6 @@ class _DeveloperModeScreenState extends State<DeveloperModeScreen> {
               _buildCard(context, Icons.system_update_rounded, context.t('forceUpdate'), '${context.t('forceUpdateSub', args: [config['minVersion'] ?? '1.0.0'])}', () => _showForceUpdateDialog(context, config)),
               const SizedBox(height: 12),
               _buildCard(context, Icons.lock_rounded, context.t('appPassword'), config['appPassword'] != null ? 'Enabled' : 'Disabled', () => _showAppPasswordDialog(context, config)),
-              const SizedBox(height: 8),
-              if (config['appPassword'] != null)
-                Card(
-                  child: SwitchListTile(
-                    title: Text(context.t('appPasswordOnce'), style: const TextStyle(fontSize: 14)),
-                    subtitle: Text(context.t('appPasswordOnceDesc'), style: const TextStyle(fontSize: 12)),
-                    value: config['appPasswordOnce'] == true,
-                    onChanged: (v) => _configRef.set({'appPasswordOnce': v}, SetOptions(merge: true)),
-                  ),
-                ),
               const SizedBox(height: 16),
               _buildSection(context, context.t('firebase')),
               _buildCard(context, Icons.local_fire_department_rounded, context.t('firebaseConsole'), context.t('firebaseConsoleSub'), () => _showFirebaseConsole(context)),
@@ -426,6 +417,8 @@ class _DeveloperModeScreenState extends State<DeveloperModeScreen> {
             TextField(
               controller: passwordController,
               obscureText: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 hintText: context.t('appPasswordHint'),
                 border: const OutlineInputBorder(),
@@ -445,8 +438,9 @@ class _DeveloperModeScreenState extends State<DeveloperModeScreen> {
             ),
           TextButton(
             onPressed: () async {
-              if (passwordController.text.trim().isNotEmpty) {
-                await _configRef.set({'appPassword': passwordController.text.trim()}, SetOptions(merge: true));
+              final text = passwordController.text.trim();
+              if (text.isNotEmpty && RegExp(r'^\d+$').hasMatch(text)) {
+                await _configRef.set({'appPassword': text}, SetOptions(merge: true));
                 if (ctx.mounted) Navigator.pop(ctx);
               }
             },

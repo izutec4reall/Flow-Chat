@@ -467,10 +467,7 @@ class Translations {
     'bannedUntil': 'Banned forever',
     'verify': 'Verify',
     'signOut': 'Sign Out',
-
-    // ========== APP PASSWORD ONCE ==========
-    'appPasswordOnce': 'Require once only',
-    'appPasswordOnceDesc': 'Once entered correctly, never ask again on this device',
+    'incorrectPassword': 'Incorrect password',
 
     // ========== USER MANAGEMENT ==========
     'userManagement': 'User Management',
@@ -1020,10 +1017,7 @@ class Translations {
     'bannedUntil': 'محظور للأبد',
     'verify': 'تحقق',
     'signOut': 'تسجيل الخروج',
-
-    // ========== APP PASSWORD ONCE ==========
-    'appPasswordOnce': 'مرة واحدة فقط',
-    'appPasswordOnceDesc': 'بمجرد إدخالها بشكل صحيح، لا تطلب مرة أخرى على هذا الجهاز',
+    'incorrectPassword': 'كلمة المرور غير صحيحة',
 
     // ========== USER MANAGEMENT ==========
     'userManagement': 'إدارة المستخدمين',

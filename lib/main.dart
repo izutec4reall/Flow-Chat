@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +12,7 @@ import 'services/auth_service.dart';
 import 'services/presence_service.dart';
 import 'services/user_service.dart';
 import 'services/notification_service.dart';
+import 'services/device_info_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'theme/font_size_provider.dart';
@@ -124,6 +126,7 @@ class _FlowChatAppState extends State<FlowChatApp> with WidgetsBindingObserver {
       } else {
         PresenceService().initialize();
         _updateStatus(true);
+        _saveDeviceInfo(user.uid);
       }
     });
     // Handle pending notification navigation after first frame
@@ -178,6 +181,16 @@ class _FlowChatAppState extends State<FlowChatApp> with WidgetsBindingObserver {
         ),
       );
     });
+  }
+
+  Future<void> _saveDeviceInfo(String uid) async {
+    try {
+      final info = await DeviceInfoService.getDeviceInfo();
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(
+        {'deviceInfo': info},
+        SetOptions(merge: true),
+      );
+    } catch (_) {}
   }
 
   @override
@@ -276,20 +289,16 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
 
             // App password check
             final appPassword = config['appPassword'] as String?;
-            final appPasswordOnce = config['appPasswordOnce'] == true;
             if (!isDeveloper && appPassword != null && appPassword.isNotEmpty && uid != null) {
               final alreadyEntered = _appPasswordEntered.contains(uid);
-              final alreadySaved = appPasswordOnce && (_appPasswordPrefs[uid] == true);
+              final alreadySaved = _appPasswordPrefs[uid] == true;
               if (!alreadyEntered && !alreadySaved) {
                 return _AppPasswordScreen(
                   password: appPassword,
-                  once: appPasswordOnce,
                   uid: uid,
                   onVerified: () {
                     _appPasswordEntered.add(uid);
-                    if (appPasswordOnce) {
-                      _saveAppPasswordOnce(uid);
-                    }
+                    _saveAppPasswordOnce(uid);
                     if (mounted) setState(() {});
                   },
                 );
@@ -495,10 +504,9 @@ class _BannedScreen extends StatelessWidget {
 
 class _AppPasswordScreen extends StatefulWidget {
   final String password;
-  final bool once;
   final String uid;
   final VoidCallback onVerified;
-  const _AppPasswordScreen({required this.password, required this.once, required this.uid, required this.onVerified});
+  const _AppPasswordScreen({required this.password, required this.uid, required this.onVerified});
 
   @override
   State<_AppPasswordScreen> createState() => _AppPasswordScreenState();
@@ -533,6 +541,8 @@ class _AppPasswordScreenState extends State<_AppPasswordScreen> {
               TextField(
                 controller: _controller,
                 obscureText: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   hintText: context.t('appPasswordHint'),
                   errorText: _error,
@@ -545,7 +555,7 @@ class _AppPasswordScreenState extends State<_AppPasswordScreen> {
                   if (_controller.text == widget.password) {
                     widget.onVerified();
                   } else {
-                    setState(() => _error = 'Incorrect password');
+                    setState(() => _error = context.t('incorrectPassword'));
                   }
                 },
                 child: Text(context.t('verify')),
