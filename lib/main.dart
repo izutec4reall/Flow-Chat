@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/presence_service.dart';
@@ -27,7 +28,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    if (kIsWeb) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    } else {
+      await Firebase.initializeApp();
+    }
     await NotificationService.init();
   } catch (e) {
     runApp(_ConfigErrorApp('$e'));
