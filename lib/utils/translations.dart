@@ -583,6 +583,11 @@ class Translations {
     'noChangelog': 'No changelog for this release.',
     'viewAllReleases': 'View all releases',
     'yourDevice': 'Your device',
+    'allReleases': 'All releases',
+    'downloadForDevice': 'Download for your device',
+    'viewDetails': 'View details',
+    'noCompatibleApk': 'No compatible APK for your device.',
+    'downloadError': 'Download failed. Please try again.',
   };
 
   static const Map<String, String> _ar = {
@@ -1147,6 +1152,11 @@ class Translations {
     'noChangelog': 'لا يوجد سجل تغييرات لهذا الإصدار.',
     'viewAllReleases': 'عرض جميع الإصدارات',
     'yourDevice': 'جهازك',
+    'allReleases': 'جميع الإصدارات',
+    'downloadForDevice': 'تحميل لجهازك',
+    'viewDetails': 'عرض التفاصيل',
+    'noCompatibleApk': 'لا يوجد ملف APK متوافق مع جهازك.',
+    'downloadError': 'فشل التحميل. حاول مرة أخرى.',
   };
 }
 

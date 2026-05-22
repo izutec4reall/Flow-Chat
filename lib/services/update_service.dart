@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
 const String _repo = 'izutec4reall/Flow-Chat';
-const String _apiUrl = 'https://api.github.com/repos/$_repo/releases/latest';
+const String _apiLatest = 'https://api.github.com/repos/$_repo/releases/latest';
+const String _apiAll = 'https://api.github.com/repos/$_repo/releases?per_page=30';
 
 class ReleaseInfo {
   final String tagName;
@@ -24,7 +25,7 @@ class ReleaseInfo {
     final tag = json['tag_name'] as String? ?? '';
     return ReleaseInfo(
       tagName: tag,
-      version: tag.replaceFirst('v', '').replaceAll('+', '.'),
+      version: tag.replaceFirst('v', '').split('+').first,
       body: json['body'] as String? ?? '',
       publishedAt: json['published_at'] as String? ?? '',
       assets: (json['assets'] as List<dynamic>?)
@@ -58,7 +59,7 @@ class UpdateService {
   static Future<ReleaseInfo?> fetchLatestRelease() async {
     try {
       final response = await http.get(
-        Uri.parse(_apiUrl),
+        Uri.parse(_apiLatest),
         headers: {'User-Agent': 'Flow-App'},
       );
       if (response.statusCode != 200) return null;
@@ -68,9 +69,25 @@ class UpdateService {
     }
   }
 
+  static Future<List<ReleaseInfo>> fetchAllReleases() async {
+    try {
+      final response = await http.get(
+        Uri.parse(_apiAll),
+        headers: {'User-Agent': 'Flow-App'},
+      );
+      if (response.statusCode != 200) return [];
+      final list = jsonDecode(response.body) as List<dynamic>;
+      return list.map((e) => ReleaseInfo.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static String _cleanVersion(String v) => v.split('+').first;
+
   static int compareVersions(String a, String b) {
-    final partsA = a.split('.').map(int.parse).toList();
-    final partsB = b.split('.').map(int.parse).toList();
+    final partsA = _cleanVersion(a).split('.').map(int.parse).toList();
+    final partsB = _cleanVersion(b).split('.').map(int.parse).toList();
     for (int i = 0; i < 3; i++) {
       final va = i < partsA.length ? partsA[i] : 0;
       final vb = i < partsB.length ? partsB[i] : 0;
@@ -80,10 +97,28 @@ class UpdateService {
     return 0;
   }
 
-  static Future<void> downloadApk(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+  static Future<bool> downloadApk(String url) async {
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      return true;
+    } catch (_) {
+      return false;
     }
+  }
+
+  static String cleanMarkdown(String body) {
+    if (body.isEmpty) return body;
+    var text = body;
+    text = text.replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '');
+    text = text.replaceAllMapped(RegExp(r'\[([^\]]*)\]\(.*?\)'), (m) => m[1]!);
+    text = text.replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '');
+    text = text.replaceAllMapped(RegExp(r'\*\*(.+?)\*\*'), (m) => m[1]!);
+    text = text.replaceAllMapped(RegExp(r'\*(.+?)\*'), (m) => m[1]!);
+    text = text.replaceAllMapped(RegExp(r'`([^`]*)`'), (m) => m[1]!);
+    text = text.replaceAll(RegExp(r'^[\s]*[-*]\s+', multiLine: true), '• ');
+    text = text.replaceAll(RegExp(r'^>\s+', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'^-{3,}$', multiLine: true), '');
+    text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+    return text.trim();
   }
 }

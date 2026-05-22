@@ -249,6 +249,7 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
   static final Set<String> _appPasswordEntered = {};
   static final Set<String> _appPasswordFlagged = {};
   static String _flagDirPath = '';
+  bool _flagsReady = false;
 
   static Future<String> _getFlagDir() async {
     if (_flagDirPath.isNotEmpty) return _flagDirPath;
@@ -263,11 +264,6 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
     return '$_flagDirPath/.$h';
   }
 
-  static Future<bool> _flagExists(String uid) async {
-    await _getFlagDir();
-    return File(_flagPath(uid)).exists();
-  }
-
   static Future<void> _writeFlag(String uid) async {
     await _getFlagDir();
     await File(_flagPath(uid)).writeAsString('1');
@@ -277,7 +273,16 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
   @override
   void initState() {
     super.initState();
-    _getFlagDir();
+    _loadFlags();
+  }
+
+  Future<void> _loadFlags() async {
+    await _getFlagDir();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && await File(_flagPath(uid)).exists()) {
+      _appPasswordFlagged.add(uid);
+    }
+    if (mounted) setState(() => _flagsReady = true);
   }
 
   @override
@@ -305,31 +310,21 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
             if (!isDeveloper && appPassword != null && appPassword.isNotEmpty && uid != null) {
               final entered = _appPasswordEntered.contains(uid);
               final flagged = _appPasswordFlagged.contains(uid);
+              if (!_flagsReady) {
+                return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              }
+              if (!entered && !flagged) {
+                return _AppPasswordScreen(
+                  password: appPassword,
+                  uid: uid,
+                  onVerified: () {
+                    _appPasswordEntered.add(uid);
+                    _writeFlag(uid);
+                    if (mounted) setState(() {});
+                  },
+                );
+              }
               if (!entered) {
-                if (!flagged) {
-                  return FutureBuilder<bool>(
-                    future: _flagExists(uid),
-                    builder: (context, fs) {
-                      if (fs.connectionState == ConnectionState.waiting) {
-                        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-                      }
-                      if (fs.data == true) {
-                        _appPasswordEntered.add(uid);
-                        _appPasswordFlagged.add(uid);
-                        return widget.child;
-                      }
-                      return _AppPasswordScreen(
-                        password: appPassword,
-                        uid: uid,
-                        onVerified: () {
-                          _appPasswordEntered.add(uid);
-                          _writeFlag(uid);
-                          if (mounted) setState(() {});
-                        },
-                      );
-                    },
-                  );
-                }
                 _appPasswordEntered.add(uid);
               }
             }
@@ -358,8 +353,9 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
   }
 
   int _compareVersion(String a, String b) {
-    final partsA = a.split('.').map(int.parse).toList();
-    final partsB = b.split('.').map(int.parse).toList();
+    final clean = (String v) => v.split('+').first;
+    final partsA = clean(a).split('.').map(int.parse).toList();
+    final partsB = clean(b).split('.').map(int.parse).toList();
     for (int i = 0; i < 3; i++) {
       if (partsA[i] < partsB[i]) return -1;
       if (partsA[i] > partsB[i]) return 1;
@@ -537,59 +533,166 @@ class _AppPasswordScreen extends StatefulWidget {
 }
 
 class _AppPasswordScreenState extends State<_AppPasswordScreen> {
-  final _controller = TextEditingController();
+  final _entered = <String>[];
   String? _error;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  void _onDigit(String d) {
+    setState(() {
+      _error = null;
+      _entered.add(d);
+    });
+    _check();
+  }
+
+  void _onDelete() {
+    if (_entered.isNotEmpty) {
+      setState(() => _entered.removeLast());
+    }
+  }
+
+  void _check() {
+    final input = _entered.join();
+    if (input.length >= widget.password.length) {
+      if (input == widget.password) {
+        widget.onVerified();
+      } else {
+        setState(() {
+          _error = context.t('incorrectPassword');
+          _entered.clear();
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final passLen = widget.password.length;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.lock_rounded, size: 80, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 24),
-              Text(context.t('appPasswordRequired'), style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+      backgroundColor: colorScheme.surface,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Spacer(flex: 2),
+            Icon(Icons.lock_rounded, size: 64, color: colorScheme.primary),
+            const SizedBox(height: 16),
+            Text(context.t('appPasswordRequired'),
+                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(context.t('appPasswordHint'),
+                style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14)),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(passLen, (i) {
+                final filled = i < _entered.length;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  width: 44,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: filled ? colorScheme.primaryContainer : colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _error != null ? colorScheme.error : colorScheme.outlineVariant,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: filled
+                      ? Text(_entered[i],
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onPrimaryContainer,
+                          ))
+                      : null,
+                );
+              }),
+            ),
+            if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(context.t('appPasswordHint'), style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _controller,
-                obscureText: true,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (_) {
-                  if (_error != null) setState(() => _error = null);
-                },
-                decoration: InputDecoration(
-                  hintText: context.t('appPasswordHint'),
-                  errorText: _error,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  if (_controller.text == widget.password) {
-                    widget.onVerified();
-                  } else {
-                    setState(() => _error = context.t('incorrectPassword'));
-                  }
-                },
-                child: Text(context.t('verify')),
-              ),
+              Text(_error!, style: TextStyle(color: colorScheme.error, fontSize: 13)),
             ],
-          ),
+            const Spacer(flex: 2),
+            _Numpad(
+              onDigit: _onDigit,
+              onDelete: _onDelete,
+            ),
+            const SizedBox(height: 24),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _Numpad extends StatelessWidget {
+  final void Function(String) onDigit;
+  final VoidCallback onDelete;
+
+  const _Numpad({required this.onDigit, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final keys = [
+      ['1', '2', '3'],
+      ['4', '5', '6'],
+      ['7', '8', '9'],
+      ['', '0', 'del'],
+    ];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: keys.map((row) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: row.map((k) {
+              if (k == 'del') {
+                return _NumpadButton(
+                  onTap: onDelete,
+                  child: const Icon(Icons.backspace_outlined, size: 24),
+                );
+              }
+              if (k.isEmpty) {
+                return const SizedBox(width: 76, height: 56);
+              }
+              return _NumpadButton(
+                onTap: () => onDigit(k),
+                child: Text(k, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
+              );
+            }).toList(),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _NumpadButton extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _NumpadButton({required this.child, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 76,
+        height: 56,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        alignment: Alignment.center,
+        child: child,
       ),
     );
   }
