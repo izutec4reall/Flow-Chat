@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/update_service.dart';
+import '../../services/device_info_service.dart';
 import '../../utils/translations.dart';
 import '../../utils/version.dart';
 
@@ -15,11 +16,18 @@ class _UpdateScreenState extends State<UpdateScreen> {
   bool _loading = true;
   String? _error;
   bool? _hasUpdate;
+  String? _deviceArch;
 
   @override
   void initState() {
     super.initState();
+    _detectArch();
     _checkUpdate();
+  }
+
+  Future<void> _detectArch() async {
+    final arch = await DeviceInfoService.getDeviceArch();
+    if (mounted) setState(() => _deviceArch = arch);
   }
 
   Future<void> _checkUpdate() async {
@@ -154,20 +162,40 @@ class _UpdateScreenState extends State<UpdateScreen> {
         if (release.assets.isNotEmpty) ...[
           Text(context.t('downloads'), style: theme.textTheme.titleSmall?.copyWith(color: colorScheme.primary)),
           const SizedBox(height: 8),
-          ...release.assets.map((asset) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.android_rounded),
-                    title: Text(asset.name),
-                    subtitle: Text(asset.formattedSize),
-                    trailing: FilledButton.tonal(
-                      onPressed: () => UpdateService.downloadApk(asset.downloadUrl),
-                      child: Text(context.t('download')),
-                    ),
+          if (_deviceArch != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                '${context.t('yourDevice')}: ${DeviceInfoService.archLabel(_deviceArch)}',
+                style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
+              ),
+            ),
+          ...release.assets.map((asset) {
+            final isMatch = _deviceArch != null && asset.name.contains(_deviceArch!);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Card(
+                color: isMatch ? colorScheme.primaryContainer : null,
+                child: ListTile(
+                  leading: Icon(
+                    isMatch ? Icons.check_circle_rounded : Icons.android_rounded,
+                    color: isMatch ? colorScheme.onPrimaryContainer : null,
+                  ),
+                  title: Text(
+                    asset.name,
+                    style: isMatch
+                        ? TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onPrimaryContainer)
+                        : null,
+                  ),
+                  subtitle: Text(asset.formattedSize),
+                  trailing: FilledButton.tonal(
+                    onPressed: () => UpdateService.downloadApk(asset.downloadUrl),
+                    child: Text(context.t('download')),
                   ),
                 ),
-              )),
+              ),
+            );
+          }),
           const SizedBox(height: 20),
         ],
 

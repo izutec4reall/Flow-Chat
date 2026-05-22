@@ -1,8 +1,39 @@
 import 'dart:io' show Platform;
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DeviceInfoService {
   static final _deviceInfo = DeviceInfoPlugin();
+
+  /// Returns the device CPU architecture label for APK matching.
+  /// One of: 'arm64-v8a', 'armeabi-v7a', 'x86_64', or null on non-Android.
+  static Future<String?> getDeviceArch() async {
+    if (kIsWeb) return null;
+    try {
+      if (Platform.isAndroid) {
+        final android = await _deviceInfo.androidInfo;
+        final abis = android.supportedAbis;
+        if (abis.contains('arm64-v8a')) return 'arm64-v8a';
+        if (abis.contains('armeabi-v7a')) return 'armeabi-v7a';
+        if (abis.contains('x86_64')) return 'x86_64';
+        if (abis.contains('x86')) return 'x86_64';
+        return abis.isNotEmpty ? abis.first : null;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Human-readable architecture name for display.
+  static String archLabel(String? arch) {
+    switch (arch) {
+      case 'arm64-v8a': return 'ARM64 (64-bit)';
+      case 'armeabi-v7a': return 'ARM (32-bit)';
+      case 'x86_64': return 'x86_64';
+      default: return arch ?? 'Unknown';
+    }
+  }
 
   static Future<Map<String, dynamic>> getDeviceInfo() async {
     final info = <String, dynamic>{};

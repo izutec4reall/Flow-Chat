@@ -582,6 +582,7 @@ class Translations {
     'changelog': 'Changelog',
     'noChangelog': 'No changelog for this release.',
     'viewAllReleases': 'View all releases',
+    'yourDevice': 'Your device',
   };
 
   static const Map<String, String> _ar = {
@@ -1145,6 +1146,7 @@ class Translations {
     'changelog': 'سجل التغييرات',
     'noChangelog': 'لا يوجد سجل تغييرات لهذا الإصدار.',
     'viewAllReleases': 'عرض جميع الإصدارات',
+    'yourDevice': 'جهازك',
   };
 }
 
