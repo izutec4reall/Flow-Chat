@@ -513,6 +513,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // 1. Create Pending Message for Optimistic UI
     final pendingMsg = MessageModel(
       senderId: user.uid,
+      senderName: user.displayName ?? user.email ?? 'User',
       receiverId: widget.otherUserId,
       content: '', // Will be replaced by network URL
       type: MessageType.image,
@@ -548,6 +549,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (imageUrl != null) {
       final message = MessageModel(
         senderId: user.uid,
+        senderName: user.displayName ?? user.email ?? 'User',
         receiverId: widget.otherUserId,
         content: imageUrl,
         type: MessageType.image,
@@ -585,6 +587,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final pendingMsg = MessageModel(
       senderId: user.uid,
+      senderName: user.displayName ?? user.email ?? 'User',
       receiverId: widget.otherUserId,
       content: '', // Will be replaced
       type: MessageType.video,
@@ -617,6 +620,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (videoUrl != null) {
       final message = MessageModel(
         senderId: user.uid,
+        senderName: user.displayName ?? user.email ?? 'User',
         receiverId: widget.otherUserId,
         content: videoUrl,
         type: MessageType.video,
@@ -656,6 +660,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final pendingMsg = MessageModel(
       senderId: user.uid,
+      senderName: user.displayName ?? user.email ?? 'User',
       receiverId: widget.otherUserId,
       content: fileName,
       type: MessageType.file,
@@ -682,6 +687,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (fileUrl != null) {
       final message = MessageModel(
         senderId: user.uid,
+        senderName: user.displayName ?? user.email ?? 'User',
         receiverId: widget.otherUserId,
         content: fileUrl,
         type: MessageType.file,

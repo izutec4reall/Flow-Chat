@@ -3,7 +3,6 @@ import '../../services/auth_service.dart';
 import '../../services/user_service.dart';
 import '../../services/cloudinary_service.dart';
 import '../../services/media_service.dart';
-import 'package:image_cropper/image_cropper.dart';
 import '../../models/user_model.dart';
 import '../../utils/constants.dart';
 import '../../utils/translations.dart';
@@ -55,12 +54,7 @@ class _AccountSettingsState extends State<AccountSettings> {
   Future<void> _updatePhoto(String uid, {required bool isCover}) async {
     final mediaService = MediaService();
     
-    final bytes = await mediaService.pickAndCropImage(
-      context: context,
-      cropStyle: isCover ? CropStyle.rectangle : CropStyle.circle,
-      ratioX: isCover ? 16 : 1,
-      ratioY: isCover ? 9 : 1,
-    );
+    final bytes = await mediaService.pickImage();
 
     if (bytes != null) {
       final fileName = 'profile_${uid}_${isCover ? 'cover' : 'avatar'}_${DateTime.now().millisecondsSinceEpoch}';
