@@ -568,6 +568,20 @@ class Translations {
     'downloadUpdate': 'Download Update',
     'updateNoLink': 'Update URL not configured. Contact support.',
     'updateError': 'Could not open update link',
+
+    // ========== AUTO UPDATE (GitHub) ==========
+    'updates': 'Updates',
+    'updateCheckFailed': 'Could not check for updates.',
+    'appUpToDate': 'App is up to date',
+    'updateAvailable': 'Update available',
+    'latestVersion': 'Latest version',
+    'versionInfo': 'Version Info',
+    'releaseDate': 'Release date',
+    'downloads': 'Downloads',
+    'download': 'Download',
+    'changelog': 'Changelog',
+    'noChangelog': 'No changelog for this release.',
+    'viewAllReleases': 'View all releases',
   };
 
   static const Map<String, String> _ar = {
@@ -1117,6 +1131,20 @@ class Translations {
     'downloadUpdate': 'تحميل التحديث',
     'updateNoLink': 'رابط التحديث غير مضبوط. اتصل بالدعم.',
     'updateError': 'تعذر فتح رابط التحديث',
+
+    // ========== AUTO UPDATE (GitHub) ==========
+    'updates': 'التحديثات',
+    'updateCheckFailed': 'تعذر التحقق من وجود تحديثات.',
+    'appUpToDate': 'التطبيق محدث',
+    'updateAvailable': 'يوجد تحديث',
+    'latestVersion': 'آخر إصدار',
+    'versionInfo': 'معلومات الإصدار',
+    'releaseDate': 'تاريخ الإصدار',
+    'downloads': 'التحميلات',
+    'download': 'تحميل',
+    'changelog': 'سجل التغييرات',
+    'noChangelog': 'لا يوجد سجل تغييرات لهذا الإصدار.',
+    'viewAllReleases': 'عرض جميع الإصدارات',
   };
 }
 

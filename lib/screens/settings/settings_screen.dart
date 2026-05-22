@@ -10,6 +10,7 @@ import 'notification_settings.dart';
 import 'appearance_settings.dart';
 import 'developer_mode_screen.dart';
 import 'privacy_settings.dart';
+import 'update_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -93,6 +94,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSettingsCard(context, [
               _SettingsItem(Icons.info_outline, context.t('aboutApp'), context.t('version', args: ['1.0.0']), () {
                 _showAboutDialog(context, colorScheme);
+              }, colorScheme),
+            ]),
+            const SizedBox(height: 24),
+
+            // Updates
+            _buildSectionHeader(context, context.t('updates')),
+            _buildSettingsCard(context, [
+              _SettingsItem(Icons.system_update_rounded, context.t('updates'), context.t('latestVersion'), () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const UpdateScreen()));
               }, colorScheme),
             ]),
             const SizedBox(height: 24),
