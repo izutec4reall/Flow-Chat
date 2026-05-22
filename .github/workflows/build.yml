@@ -85,11 +85,12 @@ jobs:
             ## Flow v${{ steps.version.outputs.version }}
 
             ### Downloads
-            - [APK arm64-v8a](app-arm64-v8a-release.apk) — for most modern Android phones
-            - [APK armeabi-v7a](app-armeabi-v7a-release.apk) — for older Android devices
-            - [APK x86_64](app-x86_64-release.apk) — for emulators / Chromebooks
+            - [APK arm64-v8a](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/app-arm64-v8a-release.apk) — for most modern Android phones
+            - [APK armeabi-v7a](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/app-armeabi-v7a-release.apk) — for older Android devices
+            - [APK x86_64](https://github.com/${{ github.repository }}/releases/download/${{ steps.version.outputs.tag }}/app-x86_64-release.apk) — for emulators / Chromebooks
           files: |
             build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
             build/app/outputs/flutter-apk/app-x86_64-release.apk
           fail_on_unmatched_files: true
+          overwrite: true
