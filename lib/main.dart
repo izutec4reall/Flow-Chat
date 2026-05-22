@@ -1,3 +1,4 @@
+import 'dart:io' show Directory, File;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -5,8 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
@@ -246,28 +247,37 @@ class _ConfigWrapper extends StatefulWidget {
 
 class _ConfigWrapperState extends State<_ConfigWrapper> {
   static final Set<String> _appPasswordEntered = {};
-  static Map<String, bool> _appPasswordPrefs = {};
+  static final Set<String> _appPasswordFlagged = {};
+  static String _flagDirPath = '';
+
+  static Future<String> _getFlagDir() async {
+    if (_flagDirPath.isNotEmpty) return _flagDirPath;
+    final dir = await getApplicationDocumentsDirectory();
+    _flagDirPath = '${dir.path}/.cfg';
+    await Directory(_flagDirPath).create(recursive: true);
+    return _flagDirPath;
+  }
+
+  static String _flagPath(String uid) {
+    final h = uid.length > 8 ? uid.substring(0, 8) : uid;
+    return '$_flagDirPath/.$h';
+  }
+
+  static Future<bool> _flagExists(String uid) async {
+    await _getFlagDir();
+    return File(_flagPath(uid)).exists();
+  }
+
+  static Future<void> _writeFlag(String uid) async {
+    await _getFlagDir();
+    await File(_flagPath(uid)).writeAsString('1');
+    _appPasswordFlagged.add(uid);
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadAppPasswordPrefs();
-  }
-
-  Future<void> _loadAppPasswordPrefs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys().where((k) => k.startsWith('app_pw_'));
-    final map = <String, bool>{};
-    for (final k in keys) {
-      map[k.replaceFirst('app_pw_', '')] = prefs.getBool(k) ?? false;
-    }
-    _appPasswordPrefs = map;
-  }
-
-  static Future<void> _saveAppPasswordOnce(String uid) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('app_pw_$uid', true);
-    _appPasswordPrefs[uid] = true;
+    _getFlagDir();
   }
 
   @override
@@ -282,7 +292,6 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
         final isDeveloper = userData?['role'] == 'developer';
         final isBanned = userData?['banned'] == true;
 
-        // Banned check (developers can still access)
         if (!isDeveloper && isBanned && uid != null) {
           return _BannedScreen();
         }
@@ -292,38 +301,48 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
           builder: (context, snapshot) {
             final config = snapshot.data?.data() as Map<String, dynamic>? ?? {};
 
-            // App password check
             final appPassword = config['appPassword'] as String?;
             if (!isDeveloper && appPassword != null && appPassword.isNotEmpty && uid != null) {
-              final alreadyEntered = _appPasswordEntered.contains(uid);
-              final alreadySaved = _appPasswordPrefs[uid] == true;
-              if (!alreadyEntered && !alreadySaved) {
-                return _AppPasswordScreen(
-                  password: appPassword,
-                  uid: uid,
-                  onVerified: () {
-                    _appPasswordEntered.add(uid);
-                    _saveAppPasswordOnce(uid);
-                    if (mounted) setState(() {});
-                  },
-                );
+              final entered = _appPasswordEntered.contains(uid);
+              final flagged = _appPasswordFlagged.contains(uid);
+              if (!entered) {
+                if (!flagged) {
+                  return FutureBuilder<bool>(
+                    future: _flagExists(uid),
+                    builder: (context, fs) {
+                      if (fs.connectionState == ConnectionState.waiting) {
+                        return const SizedBox.shrink();
+                      }
+                      if (fs.data == true) {
+                        _appPasswordEntered.add(uid);
+                        _appPasswordFlagged.add(uid);
+                        return widget.child;
+                      }
+                      return _AppPasswordScreen(
+                        password: appPassword,
+                        uid: uid,
+                        onVerified: () {
+                          _appPasswordEntered.add(uid);
+                          _writeFlag(uid);
+                          if (mounted) setState(() {});
+                        },
+                      );
+                    },
+                  );
+                }
+                _appPasswordEntered.add(uid);
               }
             }
 
             if (!isDeveloper) {
-              // Maintenance mode
               if (config['maintenanceMode'] == true) {
                 return _MaintenanceScreen(message: config['maintenanceMessage'] ?? 'Under maintenance');
               }
-
-              // Force update
               final minVersion = config['minVersion'] as String?;
               final apkUrl = config['apkUrl'] as String?;
               if (minVersion != null && _compareVersion(appVersion, minVersion) < 0) {
                 return _ForceUpdateScreen(currentVersion: appVersion, minVersion: minVersion, apkUrl: apkUrl);
               }
-
-              // Broadcast
               final broadcast = config['broadcast'] as Map?;
               final showBanner = broadcast?['active'] == true && broadcast?['message'] != null;
               if (showBanner) {
@@ -548,6 +567,9 @@ class _AppPasswordScreenState extends State<_AppPasswordScreen> {
                 obscureText: true,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (_) {
+                  if (_error != null) setState(() => _error = null);
+                },
                 decoration: InputDecoration(
                   hintText: context.t('appPasswordHint'),
                   errorText: _error,
