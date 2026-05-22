@@ -53,12 +53,22 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Decode release keystore
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release-keystore.jks
+          echo "Keystore decoded"
+
       - name: Build split APKs
         run: |
           flutter build apk --release --split-per-abi \
             --android-skip-build-dependency-validation \
             --dart-define-from-file=.env
           echo "APKs built"
+        env:
+          RELEASE_KEYSTORE_PATH: /tmp/release-keystore.jks
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 
       - name: Build Web
         run: |
