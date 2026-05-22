@@ -4,34 +4,46 @@ import 'encryption_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  // In-memory cache for user profiles
-  static final Map<String, UserModel> _userCache = {};
+
+  static const int _cacheTTL = 300;
+  static final Map<String, _CacheEntry> _cache = {};
 
   Future<void> createUser(UserModel user) async {
     final key = EncryptionService.generateKey();
     final data = user.toMap();
     data['encryptionKey'] = key;
     await _firestore.collection('users').doc(user.uid).set(data);
-    _userCache[user.uid] = UserModel(
+    _setCache(user.uid, UserModel(
       uid: user.uid, email: user.email, displayName: user.displayName,
       username: user.username, bio: user.bio, photoUrl: user.photoUrl,
       coverUrl: user.coverUrl, lastSeen: user.lastSeen,
       isOnline: user.isOnline, encryptionKey: key,
       role: user.role, fcmTokens: user.fcmTokens,
-    );
+    ));
+  }
+
+  UserModel? _getCached(String uid) {
+    final entry = _cache[uid];
+    if (entry == null) return null;
+    if (DateTime.now().difference(entry.cachedAt).inSeconds > _cacheTTL) {
+      _cache.remove(uid);
+      return null;
+    }
+    return entry.user;
+  }
+
+  void _setCache(String uid, UserModel user) {
+    _cache[uid] = _CacheEntry(user: user, cachedAt: DateTime.now());
   }
 
   Future<UserModel?> getUser(String uid) async {
-    // Check cache first
-    if (_userCache.containsKey(uid)) {
-      return _userCache[uid];
-    }
+    final cached = _getCached(uid);
+    if (cached != null) return cached;
 
     final doc = await _firestore.collection('users').doc(uid).get();
     if (doc.exists && doc.data() != null) {
       final user = UserModel.fromMap(doc.data()!);
-      _userCache[uid] = user; // Save to cache
+      _setCache(uid, user);
       return user;
     }
     return null;
@@ -40,10 +52,50 @@ class UserService {
   Stream<UserModel?> getUserStream(String uid) {
     return _firestore.collection('users').doc(uid).snapshots().map((doc) {
       if (doc.exists && doc.data() != null) {
-        return UserModel.fromMap(doc.data()!);
+        final user = UserModel.fromMap(doc.data()!);
+        _setCache(uid, user);
+        return user;
       }
       return null;
     });
+  }
+
+  Future<Map<String, UserModel?>> getUsersBatch(List<String> uids) async {
+    final result = <String, UserModel?>{};
+    final uncached = <String>[];
+
+    for (final uid in uids) {
+      final cached = _getCached(uid);
+      if (cached != null) {
+        result[uid] = cached;
+      } else {
+        uncached.add(uid);
+      }
+    }
+
+    if (uncached.isEmpty) return result;
+
+    final chunks = _chunks(uncached, 10);
+    for (final chunk in chunks) {
+      final q = await _firestore
+          .collection('users')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+      for (final doc in q.docs) {
+        final user = UserModel.fromMap(doc.data());
+        _setCache(doc.id, user);
+        result[doc.id] = user;
+      }
+    }
+    return result;
+  }
+
+  List<List<String>> _chunks(List<String> list, int size) {
+    final chunks = <List<String>>[];
+    for (int i = 0; i < list.length; i += size) {
+      chunks.add(list.sublist(i, (i + size > list.length) ? list.length : i + size));
+    }
+    return chunks;
   }
 
   Future<void> updateProfile(String uid, {String? displayName, String? photoUrl, String? coverUrl, String? username, String? bio}) async {
@@ -53,26 +105,22 @@ class UserService {
     if (coverUrl != null) data['coverUrl'] = coverUrl;
     if (username != null) data['username'] = username;
     if (bio != null) data['bio'] = bio;
-    
+
     if (data.isNotEmpty) {
       await _firestore.collection('users').doc(uid).update(data);
-      // Invalidate or update cache
-      if (_userCache.containsKey(uid)) {
-        final existing = _userCache[uid]!;
-        _userCache[uid] = UserModel(
-          uid: existing.uid,
-          email: existing.email,
+      final existing = _getCached(uid);
+      if (existing != null) {
+        _setCache(uid, UserModel(
+          uid: existing.uid, email: existing.email,
           displayName: displayName ?? existing.displayName,
           username: username ?? existing.username,
           bio: bio ?? existing.bio,
           photoUrl: photoUrl ?? existing.photoUrl,
           coverUrl: coverUrl ?? existing.coverUrl,
-          isOnline: existing.isOnline,
-          lastSeen: existing.lastSeen,
+          isOnline: existing.isOnline, lastSeen: existing.lastSeen,
           encryptionKey: existing.encryptionKey,
-          role: existing.role,
-          fcmTokens: existing.fcmTokens,
-        );
+          role: existing.role, fcmTokens: existing.fcmTokens,
+        ));
       }
     }
   }
@@ -87,7 +135,6 @@ class UserService {
   }
 
   Future<List<UserModel>> searchUsers(String query) async {
-    // Search by email
     final emailQuery = await _firestore
         .collection('users')
         .where('email', isGreaterThanOrEqualTo: query)
@@ -95,7 +142,6 @@ class UserService {
         .limit(10)
         .get();
 
-    // Search by username
     final usernameQuery = await _firestore
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: query)
@@ -120,11 +166,21 @@ class UserService {
 
   Future<void> updateUserRole(String uid, String role) async {
     await _firestore.collection('users').doc(uid).update({'role': role});
-    _userCache.remove(uid); // Invalidate cache to force reload
+    _cache.remove(uid);
   }
 
   Future<List<UserModel>> getInitialUsers({int limit = 50}) async {
     final query = await _firestore.collection('users').limit(limit).get();
-    return query.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
+    final users = query.docs.map((doc) => UserModel.fromMap(doc.data())).toList();
+    for (final u in users) {
+      _setCache(u.uid, u);
+    }
+    return users;
   }
+}
+
+class _CacheEntry {
+  final UserModel user;
+  final DateTime cachedAt;
+  _CacheEntry({required this.user, required this.cachedAt});
 }

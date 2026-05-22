@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/chat_model.dart';
 import '../models/user_model.dart';
 import '../services/chat_service.dart';
 import '../services/message_service.dart';
 import '../services/presence_service.dart';
+import '../services/user_service.dart';
 import '../screens/chat/chat_screen.dart';
 import '../utils/date_formatter.dart';
 import '../utils/translations.dart';
@@ -102,15 +102,8 @@ class ChatListItem extends StatelessWidget {
     final int unreadCount = chat.unreadCounts[currentUserId] ?? 0;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return StreamBuilder<UserModel?>(
-      stream: chat.isGroup
-          ? Stream.value(null)
-          : FirebaseFirestore.instance
-              .collection('users')
-              .doc(otherUserId)
-              .snapshots()
-              .map((doc) =>
-                  doc.exists ? UserModel.fromMap(doc.data()!) : null),
+    return FutureBuilder<UserModel?>(
+      future: chat.isGroup ? null : UserService().getUser(otherUserId),
       builder: (context, snapshot) {
         final otherUser = snapshot.data;
 
