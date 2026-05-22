@@ -311,7 +311,7 @@ class _ConfigWrapperState extends State<_ConfigWrapper> {
                     future: _flagExists(uid),
                     builder: (context, fs) {
                       if (fs.connectionState == ConnectionState.waiting) {
-                        return const SizedBox.shrink();
+                        return const Scaffold(body: Center(child: CircularProgressIndicator()));
                       }
                       if (fs.data == true) {
                         _appPasswordEntered.add(uid);
