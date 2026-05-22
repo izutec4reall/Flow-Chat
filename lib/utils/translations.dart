@@ -191,6 +191,9 @@ class Translations {
     'delete': 'Delete',
     'deleteChat': 'Delete Chat',
     'deleteChatConfirm': 'Are you sure you want to delete this conversation? This cannot be undone.',
+    'deleted': 'Deleted',
+    'errorOccurred': 'An error occurred. Please try again.',
+    'deleteSavedConfirm': 'Delete this saved message?',
 
     // Context menu (long-press)
     'markAsRead': 'Mark as Read',
@@ -208,6 +211,8 @@ class Translations {
     'justNow': 'Just now',
     'yesterday': 'Yesterday',
     'today': 'Today',
+    'thisWeek': 'This week',
+    'lastWeek': 'Last week',
 
     // ========== GROUP ==========
     'groupInfoTitle': 'Group Info',
@@ -761,6 +766,9 @@ class Translations {
     'delete': 'حذف',
     'deleteChat': 'حذف المحادثة',
     'deleteChatConfirm': 'هل أنت متأكد من حذف هذه المحادثة؟ لا يمكن التراجع عن هذا الإجراء.',
+    'deleted': 'تم الحذف',
+    'errorOccurred': 'حدث خطأ. حاول مرة أخرى.',
+    'deleteSavedConfirm': 'حذف هذه الرسالة المحفوظة؟',
 
     // Context menu (long-press)
     'markAsRead': 'تحديد كمقروء',
@@ -778,6 +786,8 @@ class Translations {
     'justNow': 'الآن',
     'yesterday': 'أمس',
     'today': 'اليوم',
+    'thisWeek': 'هذا الأسبوع',
+    'lastWeek': 'الأسبوع الماضي',
 
     // ========== GROUP ==========
     'groupInfoTitle': 'معلومات المجموعة',
