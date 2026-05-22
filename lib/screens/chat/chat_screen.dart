@@ -10,6 +10,7 @@ import '../../services/chat_service.dart';
 import '../../services/presence_service.dart';
 import '../../services/user_service.dart';
 import '../../services/cloudinary_service.dart';
+import '../../services/notification_service.dart';
 import '../../utils/date_formatter.dart';
 import '../../models/chat_model.dart';
 import '../../models/user_model.dart';
@@ -178,6 +179,30 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
+  void _notifyRecipients(MessageModel message) {
+    final title = widget.isGroup
+        ? context.t('unnamedGroup')
+        : (message.senderName ?? context.t('appName'));
+    final body = message.type == MessageType.text
+        ? message.content
+        : context.t(message.type.name);
+
+    final recipients = widget.isGroup
+        ? _groupMembers.map((m) => m.uid).toList()
+        : [widget.otherUserId];
+
+    for (final pid in recipients) {
+      if (pid != message.senderId) {
+        NotificationService.sendNotification(
+          recipientUid: pid,
+          title: title,
+          body: body,
+          chatId: widget.chatId,
+        );
+      }
+    }
+  }
+
   void _sendMessage(String text) {
     final user = _authService.currentUser;
     if (user == null) return;
@@ -197,6 +222,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Fetch participants from Firestore for unread tracking
     _messageService.sendMessage(widget.chatId, message);
+    _notifyRecipients(message);
     _cancelReply();
   }
 
@@ -222,6 +248,7 @@ class _ChatScreenState extends State<ChatScreen> {
         );
 
         _messageService.sendMessage(widget.chatId, message);
+        _notifyRecipients(message);
         _cancelReply();
       }
     } catch (e) {
@@ -558,6 +585,7 @@ class _ChatScreenState extends State<ChatScreen> {
         replyToMessageContent: repliedContent,
       );
       await _messageService.sendMessage(widget.chatId, message);
+      _notifyRecipients(message);
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -629,6 +657,7 @@ class _ChatScreenState extends State<ChatScreen> {
         replyToMessageContent: repliedContent,
       );
       await _messageService.sendMessage(widget.chatId, message);
+      _notifyRecipients(message);
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -697,6 +726,7 @@ class _ChatScreenState extends State<ChatScreen> {
         replyToMessageContent: repliedContent,
       );
       await _messageService.sendMessage(widget.chatId, message);
+      _notifyRecipients(message);
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 
 class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -53,6 +55,59 @@ class NotificationService {
         await service._saveToken(user.uid, token);
       }
     } catch (_) {}
+  }
+
+  /// Send a push notification to a user via FCM HTTP API (serverless).
+  static Future<void> sendNotification({
+    required String recipientUid,
+    required String title,
+    required String body,
+    String? chatId,
+  }) async {
+    final serverKey = const String.fromEnvironment('FCM_SERVER_KEY');
+    if (serverKey.isEmpty) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(recipientUid).get();
+      if (!doc.exists) return;
+      final raw = doc.data()?['fcmTokens'];
+      final tokens = raw is List ? List<String>.from(raw) : <String>[];
+      if (tokens.isEmpty) return;
+
+      final payload = {
+        'registration_ids': tokens,
+        'priority': 'high',
+        'notification': {
+          'title': title,
+          'body': body,
+          'sound': 'default',
+          'android_channel_id': 'high_importance_channel',
+        },
+        'data': {
+          'chatId': chatId ?? '',
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+        },
+        'android': {
+          'priority': 'high',
+          'notification': {
+            'channel_id': 'high_importance_channel',
+            'priority': 'high',
+            'default_sound': true,
+          },
+        },
+      };
+
+      await http.post(
+        Uri.parse('https://fcm.googleapis.com/fcm/send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'key=$serverKey',
+        },
+        body: jsonEncode(payload),
+      );
+    } catch (_) {
+      // Silently fail — notification may not arrive
+    }
   }
 
   Future<void> _requestPermissionAndSaveToken() async {
