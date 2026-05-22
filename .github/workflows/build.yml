@@ -27,6 +27,25 @@ jobs:
         run: |
           echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
+      # ── Generate .env from GitHub Secrets ──
+      - name: Generate .env from secrets
+        run: |
+          cat > .env << 'ENVEOF'
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}
+          FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_WEB_API_KEY=${{ secrets.FIREBASE_WEB_API_KEY }}
+          FIREBASE_WEB_APP_ID=${{ secrets.FIREBASE_WEB_APP_ID }}
+          FIREBASE_WEB_AUTH_DOMAIN=${{ secrets.FIREBASE_WEB_AUTH_DOMAIN }}
+          FIREBASE_WEB_MEASUREMENT_ID=${{ secrets.FIREBASE_WEB_MEASUREMENT_ID }}
+          FIREBASE_ANDROID_API_KEY=${{ secrets.FIREBASE_ANDROID_API_KEY }}
+          FIREBASE_ANDROID_APP_ID=${{ secrets.FIREBASE_ANDROID_APP_ID }}
+          ENVEOF
+          # Remove any leading whitespace from heredoc
+          sed -i 's/^[[:space:]]*//' .env
+          echo "✅ .env generated with $(wc -l < .env) keys"
+
       - name: Extract version
         id: version
         run: |
@@ -38,36 +57,23 @@ jobs:
         run: |
           flutter build apk --release --split-per-abi \
             --android-skip-build-dependency-validation \
-            --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
-            --dart-define=FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }} \
-            --dart-define=FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }} \
-            --dart-define=FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }} \
-            --dart-define=FIREBASE_WEB_API_KEY=${{ secrets.FIREBASE_WEB_API_KEY }} \
-            --dart-define=FIREBASE_WEB_APP_ID=${{ secrets.FIREBASE_WEB_APP_ID }} \
-            --dart-define=FIREBASE_WEB_AUTH_DOMAIN=${{ secrets.FIREBASE_WEB_AUTH_DOMAIN }} \
-            --dart-define=FIREBASE_WEB_MEASUREMENT_ID=${{ secrets.FIREBASE_WEB_MEASUREMENT_ID }} \
-            --dart-define=FIREBASE_ANDROID_API_KEY=${{ secrets.FIREBASE_ANDROID_API_KEY }} \
-            --dart-define=FIREBASE_ANDROID_APP_ID=${{ secrets.FIREBASE_ANDROID_APP_ID }}
+            --dart-define-from-file=.env
           echo "APKs built"
 
       - name: Build Web
         run: |
           flutter build web --release \
-            --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }} \
-            --dart-define=FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }} \
-            --dart-define=FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }} \
-            --dart-define=FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }} \
-            --dart-define=FIREBASE_WEB_API_KEY=${{ secrets.FIREBASE_WEB_API_KEY }} \
-            --dart-define=FIREBASE_WEB_APP_ID=${{ secrets.FIREBASE_WEB_APP_ID }} \
-            --dart-define=FIREBASE_WEB_AUTH_DOMAIN=${{ secrets.FIREBASE_WEB_AUTH_DOMAIN }} \
-            --dart-define=FIREBASE_WEB_MEASUREMENT_ID=${{ secrets.FIREBASE_WEB_MEASUREMENT_ID }} \
-            --dart-define=FIREBASE_ANDROID_API_KEY=${{ secrets.FIREBASE_ANDROID_API_KEY }} \
-            --dart-define=FIREBASE_ANDROID_APP_ID=${{ secrets.FIREBASE_ANDROID_APP_ID }}
+            --dart-define-from-file=.env
 
       - name: List build outputs
         run: |
           ls -lh build/app/outputs/flutter-apk/
           ls -lh build/web/
+
+      # ── Clean up secrets ──
+      - name: Remove .env
+        if: always()
+        run: rm -f .env
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -87,5 +93,3 @@ jobs:
             build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
             build/app/outputs/flutter-apk/app-x86_64-release.apk
           fail_on_unmatched_files: true
-
-

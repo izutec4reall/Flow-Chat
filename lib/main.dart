@@ -596,8 +596,10 @@ class _ConfigErrorApp extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Pass Firebase keys via --dart-define flags:\n'
-                    'flutter run --dart-define=FIREBASE_PROJECT_ID=... --dart-define=FIREBASE_WEB_API_KEY=...',
+                    'Setup:\n'
+                    '1. cp .env.example .env\n'
+                    '2. Fill in your Firebase values\n'
+                    '3. ./run.sh',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
